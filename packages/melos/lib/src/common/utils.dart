@@ -132,8 +132,9 @@ extension StringUtils on String {
 }
 
 int get terminalWidth {
-  if (currentPlatform.environment
-      .containsKey(EnvironmentVariableKey.melosTerminalWidth)) {
+  if (currentPlatform.environment.containsKey(
+    EnvironmentVariableKey.melosTerminalWidth,
+  )) {
     return int.tryParse(
           currentPlatform
               .environment[EnvironmentVariableKey.melosTerminalWidth]!,
@@ -483,7 +484,9 @@ Future<int> startCommand(
         const lineSplitter = LineSplitter();
         var lines = lineSplitter.convert(data);
         lines = lines
-            .map((line) => '$logPrefix$line${line.contains('\n') ? '' : '\n'}')
+            .map(
+              (line) => '$logPrefix$line${line.contains('\n') ? '' : '\n'}',
+            )
             .toList();
         sink.add(lines.join());
       },
@@ -505,27 +508,21 @@ Future<int> startCommand(
   final processStdoutCompleter = Completer<void>();
   final processStderrCompleter = Completer<void>();
 
-  stdoutStream.listen(
-    (event) {
-      processStdout.addAll(event);
-      if (!onlyOutputOnError) {
-        logger.logWithoutNewLine(
-          utf8.decode(event, allowMalformed: true),
-          group: group,
-        );
-      }
-    },
-    onDone: processStdoutCompleter.complete,
-  );
-  stderrStream.listen(
-    (event) {
-      processStderr.addAll(event);
-      if (!onlyOutputOnError) {
-        logger.error(utf8.decode(event, allowMalformed: true), group: group);
-      }
-    },
-    onDone: processStderrCompleter.complete,
-  );
+  stdoutStream.listen((event) {
+    processStdout.addAll(event);
+    if (!onlyOutputOnError) {
+      logger.logWithoutNewLine(
+        utf8.decode(event, allowMalformed: true),
+        group: group,
+      );
+    }
+  }, onDone: processStdoutCompleter.complete);
+  stderrStream.listen((event) {
+    processStderr.addAll(event);
+    if (!onlyOutputOnError) {
+      logger.error(utf8.decode(event, allowMalformed: true), group: group);
+    }
+  }, onDone: processStderrCompleter.complete);
 
   await processStdoutCompleter.future;
   await processStderrCompleter.future;
@@ -534,10 +531,7 @@ Future<int> startCommand(
   _runningPids.remove(process.pid);
 
   if (onlyOutputOnError && exitCode > 0) {
-    logger.log(
-      utf8.decode(processStdout, allowMalformed: true),
-      group: group,
-    );
+    logger.log(utf8.decode(processStdout, allowMalformed: true), group: group);
     logger.error(
       utf8.decode(processStderr, allowMalformed: true),
       group: group,
@@ -578,10 +572,12 @@ String Function(String) _scriptArgumentFormatter(
 bool isPubSubcommand({required MelosWorkspace workspace}) {
   try {
     return Process.runSync(
-          workspace.sdkTool('pub'),
-          ['--version'],
-          runInShell: true,
-        ).exitCode !=
+                workspace.sdkTool('pub'),
+                [
+                  '--version',
+                ],
+                runInShell: true)
+            .exitCode !=
         0;
   } on ProcessException {
     return true;
@@ -651,11 +647,9 @@ List<String> pubCommandExecArgs({
   required MelosWorkspace workspace,
 }) {
   return [
-    if (useFlutter)
-      workspace.sdkTool('flutter')
-    else if (isPubSubcommand(workspace: workspace))
-      workspace.sdkTool('dart'),
-    'pub',
+    workspace.sdkTool('dart'),
+    'run',
+    'pub/bin/pub.dart',
   ];
 }
 
