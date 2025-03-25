@@ -459,6 +459,7 @@ Future<int> startCommand(
   bool includeParentEnvironment = true,
   String? group,
 }) async {
+  print("commmmm:${command.join(' ')}");
   final processedCommand = command
       // Remove empty arguments.
       .whereNot((argument) => argument.trim().isEmpty)

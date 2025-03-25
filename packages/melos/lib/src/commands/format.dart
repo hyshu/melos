@@ -41,6 +41,8 @@ mixin _FormatMixin on _Melos {
     final pool = Pool(concurrency);
     final formatArgs = [
       'dart',
+      'run',
+      'pub/bin/pub.dart',
       'format',
       if (effectiveSetExitIfChanged ?? false) '--set-exit-if-changed',
       if (output != null) '--output $output',
