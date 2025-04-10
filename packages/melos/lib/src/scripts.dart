@@ -318,7 +318,14 @@ class Script {
     if (exec == null) {
       return scriptCommand;
     } else {
-      final execCommand = ['melos', 'exec'];
+      final execCommand = [
+        'dart',
+        'run',
+        'pub/bin/pub.dart',
+        'run',
+        'melos',
+        'exec',
+      ];
 
       if (exec.concurrency != null) {
         execCommand.addAll(['--concurrency', '${exec.concurrency}']);

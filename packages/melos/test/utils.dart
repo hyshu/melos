@@ -86,7 +86,7 @@ Directory createTestTempDir({bool isLocal = false}) {
 Future<void> runPubGet(String workspacePath) async {
   final result = await Process.run(
     'dart',
-    ['pub', 'get'],
+    ['run', 'pub/bin/pub.dart', 'get'],
     runInShell: Platform.isWindows,
     workingDirectory: workspacePath,
     stdoutEncoding: utf8,

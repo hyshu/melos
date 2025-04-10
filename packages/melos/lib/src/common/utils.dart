@@ -651,11 +651,9 @@ List<String> pubCommandExecArgs({
   required MelosWorkspace workspace,
 }) {
   return [
-    if (useFlutter)
-      workspace.sdkTool('flutter')
-    else if (isPubSubcommand(workspace: workspace))
-      workspace.sdkTool('dart'),
-    'pub',
+    'dart',
+    'run',
+    'pub/bin/pub.dart',
   ];
 }
 
