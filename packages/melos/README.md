@@ -58,13 +58,21 @@ To migrate to Melos 7.x.x a few steps are needed:
 > packages manually. Give a thumbs up [here](https://github.com/dart-lang/pub/issues/4391)
 > so that the team can prioritize this feature.
 
+> [!NOTE]
+> **Root packages migration:** If your existing project uses the repository
+> root as a package, you can enable `useRootAsPackage: true` in the melos
+> configuration to maintain this behavior, or restructure your project to
+> move the main application to a subdirectory. See the
+> [Configuration Overview](https://melos.invertase.dev/~melos-latest/configuration/overview#useRootAsPackage)
+> for details.
+
 After the migration, your root `pubspec.yaml` file would now look something
 like this:
 ```yaml
 name: my_workspace
 publish_to: none
 environment:
-  sdk: ^3.8.0
+  sdk: ^3.9.0
 workspace:
   - packages/helper
   - packages/client_package
@@ -82,7 +90,7 @@ And this is what the `pubspec.yaml` file of a package would look like:
 ```yaml
 name: my_package
 environment:
-  sdk: ^3.8.0
+  sdk: ^3.9.0
 resolution: workspace
 ```
 

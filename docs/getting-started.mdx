@@ -40,13 +40,15 @@ dart pub global activate melos
 
 Melos is designed to work with a workspace. A workspace is a directory which
 contains all the packages that are going to be developed together. Its root
-directory must contain a `melos.yaml` and a `pubspec.yaml` file.
+directory must contain a `pubspec.yaml` file defining the workspace.
 
 ### Recommended directory structure
 
-When using Melos you shouldn't have a project in the root of the workspace,
-since that is where the configuration for the workspace will live and those
-dependencies might clash with your project dependencies.
+When using Melos it's recommended to not have an app/package in the root of the
+workspace, since that is where the configuration for the workspace will live.
+If you want to you can still do it though, and Melos will work just fine, when
+using `useRootAsPackage: true` it is even required, see
+[here](/configuration/overview#userootaspackage).
 
 The following is the recommended workspace directory structure:
 
@@ -58,7 +60,6 @@ my_project
 ├── packages
 │   ├── package_1
 │   └── package_2
-├── melos.yaml
 ├── pubspec.yaml
 └── README.md
 ```
@@ -79,7 +80,7 @@ now:
 name: my_project
 publish_to: none
 environment:
-  sdk: ^3.8.0
+  sdk: ^3.9.0
 workspace:
   - packages/helper
   - packages/client_package
@@ -110,23 +111,6 @@ resolution: workspace
 ...
 ```
 
-### Configure the workspace
-
-Next create a `melos.yaml` file at the repository root. Within the `melos.yaml`
-file, add the `name` and `packages` fields:
-
-```yaml
-name: my_project
-
-packages:
-  - apps/**
-  - packages/**
-```
-
-The `packages` list should contain paths to the individual packages within your
-project. Each path can be defined using the
-[glob](https://docs.python.org/3/library/glob.html) pattern expansion format.
-
 ## Bootstrapping
 
 Once installed & setup, Melos needs to be bootstrapped. Bootstrapping has
@@ -145,6 +129,28 @@ melos bootstrap
 If you wonder why bootstrapping is needed you can read more about it in the
 [Bootstrap section](/commands/bootstrap).
 
+## Single package projects (non-monorepo)
+
+Melos can also be used for single package projects to leverage its features
+like versioning, publishing, and changelog generation. This is useful when you
+want to use Melos tools but don't have a monorepo structure.
+
+For single package setup, just add `useRootAsPackage: true` to your 
+`pubspec.yaml`:
+
+```yaml
+name: my_single_package
+publish_to: none
+environment:
+  sdk: ^3.9.0
+
+dev_dependencies:
+  melos: ^7.0.0
+
+melos:
+  useRootAsPackage: true
+```
+
 ## Next steps
 
 Once successfully bootstrapped, you can develop your packages side-by-side with
@@ -153,25 +159,24 @@ packages.
 
 Melos also provides other helpful features such as running scripts across all
 packages. For example, to run dart analyzer in each package, add a new `script`
-item in your `melos.yaml`:
+item in your root `pubspec.yaml`:
 
 ```yaml
-name: my_project
+name: my_workspace
 
-packages:
-  - apps/**
-  - packages/**
+...
 
-scripts:
-  generate:
-    run: melos exec -c 1 --depends-on build_runner -- dart run build_runner build
+melos:
+  scripts:
+    generate:
+      run: melos exec -c 1 --depends-on build_runner -- dart run build_runner build
 ```
 
 Then execute the command by running `melos generate`.
 
 If you're looking for some inspiration as to what scripts can help with, check
 out the
-[FlutterFire repository](https://github.com/firebase/flutterfire/blob/main/melos.yaml)
+[FlutterFire repository](https://github.com/firebase/flutterfire/blob/main/pubspec.yaml)
 or the [Flame repository](https://github.com/flame-engine/flame/blob/main/pubspec.yaml).
 
 If you are using VS Code, there is an [extension](/ide-support#vs-code)
