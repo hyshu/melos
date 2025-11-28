@@ -106,6 +106,8 @@ class Script {
     this.packageFilters,
     this.exec,
     this.steps = const [],
+    this.isPrivate = false,
+    this.groups = const [],
   });
 
   factory Script.fromYaml(
@@ -120,6 +122,8 @@ class Script {
     final List<String> steps;
     PackageFilters? packageFilters;
     ExecOptions? exec;
+    bool? isPrivate;
+    List<String>? groups;
 
     if (yaml is String) {
       run = yaml;
@@ -132,6 +136,8 @@ class Script {
         env: env,
         packageFilters: packageFilters,
         exec: exec,
+        isPrivate: isPrivate ?? false,
+        groups: groups,
       );
     }
 
@@ -224,6 +230,28 @@ class Script {
             workspacePath: workspacePath,
           );
 
+    isPrivate = assertKeyIsA<bool?>(
+      key: 'private',
+      map: yaml,
+      path: scriptPath,
+    );
+
+    final groupsList = yaml['groups'];
+    groups = groupsList is List && groupsList.isNotEmpty
+        ? assertListIsA<String>(
+            key: 'groups',
+            map: yaml,
+            isRequired: false,
+            assertItemIsA: (index, value) {
+              return assertIsA<String>(
+                value: value,
+                index: index,
+                path: scriptPath,
+              );
+            },
+          )
+        : [];
+
     return Script(
       name: name,
       run: run,
@@ -232,6 +260,8 @@ class Script {
       env: env,
       packageFilters: packageFilters,
       exec: exec,
+      isPrivate: isPrivate ?? false,
+      groups: groups,
     );
   }
 
@@ -307,6 +337,12 @@ class Script {
   /// packages.
   final ExecOptions? exec;
 
+  /// This option defines if the script shows up in the list of scripts or not
+  final bool isPrivate;
+
+  // The groups the script is belonging to
+  final List<String>? groups;
+
   /// Returns the full command to run when executing this script.
   List<String> command([List<String>? extraArgs]) {
     String quoteScript(String script) => '"${script.replaceAll('"', r'\"')}"';
@@ -373,6 +409,8 @@ class Script {
       if (packageFilters != null) 'packageFilters': packageFilters!.toJson(),
       if (steps != null) 'steps': steps,
       if (exec != null) 'exec': exec!.toJson(),
+      'private': isPrivate,
+      if (groups != null) 'groups': groups,
     };
   }
 
@@ -386,6 +424,8 @@ class Script {
       const DeepCollectionEquality().equals(other.env, env) &&
       other.packageFilters == packageFilters &&
       other.steps == steps &&
+      other.isPrivate == isPrivate &&
+      other.groups == groups &&
       other.exec == exec;
 
   @override
@@ -397,7 +437,9 @@ class Script {
       const DeepCollectionEquality().hash(env) ^
       packageFilters.hashCode ^
       steps.hashCode ^
-      exec.hashCode;
+      exec.hashCode ^
+      isPrivate.hashCode ^
+      groups.hashCode;
 
   @override
   String toString() {
@@ -410,6 +452,8 @@ Script(
   packageFilters: ${packageFilters.toString().indent('  ')},
   steps: $steps,
   exec: ${exec.toString().indent('  ')},
+  private: $isPrivate,
+  groups: $groups
 )''';
   }
 }

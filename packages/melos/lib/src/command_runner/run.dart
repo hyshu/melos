@@ -11,6 +11,33 @@ class RunCommand extends MelosCommand {
           """configuration). Filters defined in the script's "packageFilters" """
           'options will however still be applied.',
     );
+    argParser.addFlag(
+      'list',
+      negatable: false,
+      help: 'Lists all scripts defined in the melos.yaml config file.',
+    );
+
+    argParser.addFlag(
+      'json',
+      negatable: false,
+      help:
+          'Lists all scripts defined in the melos.yaml config file with '
+          'description in json format.',
+    );
+
+    argParser.addFlag(
+      'include-private',
+      negatable: false,
+      help:
+          'Ignore the "private" option for scripts to show and be able to run '
+          'private scripts',
+    );
+
+    argParser.addOption(
+      'group',
+      abbr: 'g',
+      help: 'Filters the scripts by the group they are belonging to.',
+    );
   }
 
   @override
@@ -32,6 +59,10 @@ class RunCommand extends MelosCommand {
     final extraArgs = scriptName != null
         ? argResults!.rest.skip(1).toList()
         : <String>[];
+    final listScripts = argResults!['list'] as bool;
+    final listScriptsAsJson = argResults!['json'] as bool;
+    final includePrivate = argResults!['include-private'] as bool;
+    final group = argResults!['group'] as String?;
 
     try {
       return await melos.run(
@@ -39,6 +70,10 @@ class RunCommand extends MelosCommand {
         scriptName: scriptName,
         noSelect: noSelect,
         extraArgs: extraArgs,
+        listScripts: listScripts,
+        listScriptsAsJson: listScriptsAsJson,
+        includePrivate: includePrivate,
+        group: group,
       );
     } on NoPackageFoundScriptException catch (err) {
       logger.warning(err.toString(), label: false);

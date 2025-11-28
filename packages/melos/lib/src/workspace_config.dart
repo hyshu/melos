@@ -66,6 +66,7 @@ class IntelliJConfig {
     this.enabled = _defaultEnabled,
     this.moduleNamePrefix = _defaultModuleNamePrefix,
     this.executeInTerminal = _defaultExecuteInTerminal,
+    this.generateAppRunConfigs = _defaultGenerateAppRunConfigs,
   });
 
   factory IntelliJConfig.fromYaml(Object? yaml) {
@@ -87,10 +88,18 @@ class IntelliJConfig {
               path: 'ide/intellij',
             )
           : _defaultExecuteInTerminal;
+      final generateAppRunConfigs = yaml.containsKey('generateAppRunConfigs')
+          ? assertKeyIsA<bool>(
+              key: 'generateAppRunConfigs',
+              map: yaml,
+              path: 'ide/intellij',
+            )
+          : _defaultGenerateAppRunConfigs;
       return IntelliJConfig(
         enabled: enabled,
         moduleNamePrefix: moduleNamePrefix,
         executeInTerminal: executeInTerminal,
+        generateAppRunConfigs: generateAppRunConfigs,
       );
     } else {
       final enabled = assertIsA<bool>(
@@ -106,6 +115,7 @@ class IntelliJConfig {
   static const _defaultModuleNamePrefix = 'melos_';
   static const _defaultEnabled = true;
   static const _defaultExecuteInTerminal = true;
+  static const _defaultGenerateAppRunConfigs = true;
 
   final bool enabled;
 
@@ -113,11 +123,14 @@ class IntelliJConfig {
 
   final bool executeInTerminal;
 
+  final bool generateAppRunConfigs;
+
   Object? toJson() {
     return {
       'enabled': enabled,
       'moduleNamePrefix': moduleNamePrefix,
       'executeInTerminal': executeInTerminal,
+      'generateAppRunConfigs': generateAppRunConfigs,
     };
   }
 
@@ -127,14 +140,16 @@ class IntelliJConfig {
       runtimeType == other.runtimeType &&
       other.enabled == enabled &&
       other.moduleNamePrefix == moduleNamePrefix &&
-      other.executeInTerminal == executeInTerminal;
+      other.executeInTerminal == executeInTerminal &&
+      other.generateAppRunConfigs == generateAppRunConfigs;
 
   @override
   int get hashCode =>
       runtimeType.hashCode ^
       enabled.hashCode ^
       moduleNamePrefix.hashCode ^
-      executeInTerminal.hashCode;
+      executeInTerminal.hashCode ^
+      generateAppRunConfigs.hashCode;
 
   @override
   String toString() {
@@ -143,6 +158,7 @@ IntelliJConfig(
   enabled: $enabled,
   moduleNamePrefix: $moduleNamePrefix,
   executeInTerminal: $executeInTerminal,
+  generateAppRunConfigs: $generateAppRunConfigs
 )
 ''';
   }
@@ -225,6 +241,7 @@ class MelosWorkspaceConfig {
     this.ide = IDEConfigs.empty,
     this.commands = CommandConfigs.empty,
     this.useRootAsPackage = false,
+    this.discoverNestedWorkspaces = false,
   }) {
     _validate();
   }
@@ -359,6 +376,13 @@ class MelosWorkspaceConfig {
         ) ??
         false;
 
+    final discoverNestedWorkspaces =
+        assertKeyIsA<bool?>(
+          key: 'discoverNestedWorkspaces',
+          map: melosYaml,
+        ) ??
+        false;
+
     return MelosWorkspaceConfig(
       path: path,
       name: name,
@@ -388,6 +412,7 @@ class MelosWorkspaceConfig {
               repositoryIsConfigured: repository != null,
             ),
       useRootAsPackage: useRootAsPackage,
+      discoverNestedWorkspaces: discoverNestedWorkspaces,
     );
   }
 
@@ -398,6 +423,7 @@ class MelosWorkspaceConfig {
         path: Directory.current.path,
         commands: CommandConfigs.empty,
         useRootAsPackage: false,
+        discoverNestedWorkspaces: false,
       );
 
   @visibleForTesting
@@ -405,12 +431,14 @@ class MelosWorkspaceConfig {
     String? name,
     String? path,
     bool? useRootAsPackage,
+    bool? discoverNestedWorkspaces,
   }) : this(
          name: name ?? 'Melos',
          packages: [],
          path: path ?? Directory.current.path,
          commands: CommandConfigs.empty,
          useRootAsPackage: useRootAsPackage ?? false,
+         discoverNestedWorkspaces: discoverNestedWorkspaces ?? false,
        );
 
   /// Loads the [MelosWorkspaceConfig] for the workspace at [workspaceRoot].
@@ -563,6 +591,10 @@ class MelosWorkspaceConfig {
   /// Defaults to false.
   final bool useRootAsPackage;
 
+  /// Whether to recursively discover packages in nested workspaces.
+  /// Defaults to false.
+  final bool discoverNestedWorkspaces;
+
   /// Validates this workspace configuration for consistency.
   void _validate() {
     final workspaceDir = Directory(path);
@@ -599,6 +631,7 @@ class MelosWorkspaceConfig {
       other.repository == repository &&
       other.sdkPath == sdkPath &&
       other.useRootAsPackage == useRootAsPackage &&
+      other.discoverNestedWorkspaces == discoverNestedWorkspaces &&
       const DeepCollectionEquality(
         GlobEquality(),
       ).equals(other.packages, packages) &&
@@ -617,6 +650,7 @@ class MelosWorkspaceConfig {
       repository.hashCode ^
       sdkPath.hashCode ^
       useRootAsPackage.hashCode ^
+      discoverNestedWorkspaces.hashCode ^
       const DeepCollectionEquality(GlobEquality()).hash(packages) &
           const DeepCollectionEquality(GlobEquality()).hash(ignore) ^
       scripts.hashCode ^
@@ -629,6 +663,8 @@ class MelosWorkspaceConfig {
         if (repository != null) 'repository': repository!,
         if (sdkPath != null) 'sdkPath': sdkPath!,
         if (useRootAsPackage) 'useRootAsPackage': useRootAsPackage,
+        if (discoverNestedWorkspaces)
+          'discoverNestedWorkspaces': discoverNestedWorkspaces,
         'categories': categories.map((category, packages) {
           return MapEntry(
             category,

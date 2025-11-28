@@ -6,19 +6,46 @@ mixin _RunMixin on _Melos {
     GlobalOptions? global,
     String? scriptName,
     bool noSelect = false,
+    bool listScripts = false,
+    bool listScriptsAsJson = false,
+    bool includePrivate = false,
     List<String> extraArgs = const [],
+    String? group,
   }) async {
+    final publicScripts = Map<String, Script>.from(config.scripts);
+    if (!includePrivate) {
+      publicScripts.removeWhere((_, script) => script.isPrivate);
+    }
+
+    if (group != null) {
+      publicScripts.removeWhere(
+        (_, script) => !(script.groups?.contains(group) ?? false),
+      );
+      if (publicScripts.isEmpty) {
+        throw EmptyGroupException._(group);
+      }
+    }
+
+    if (listScripts && scriptName == null) {
+      _handleListScripts(
+        publicScripts,
+        listAsJson: listScriptsAsJson,
+        group: group,
+      );
+      return;
+    }
+
     if (config.scripts.keys.isEmpty) {
       throw NoScriptException._();
     }
 
-    scriptName ??= await _pickScript(config);
-    final script = config.scripts[scriptName];
+    scriptName ??= await _pickScript(publicScripts);
+    final script = publicScripts[scriptName];
 
     if (script == null) {
       throw ScriptNotFoundException._(
         scriptName,
-        config.scripts.keys.toList(),
+        publicScripts.keys.toList(),
       );
     }
 
@@ -84,6 +111,26 @@ mixin _RunMixin on _Melos {
     }
   }
 
+  void _handleListScripts(
+    Map<String, Script> scripts, {
+    bool listAsJson = false,
+    String? group,
+  }) {
+    if (listAsJson) {
+      logger.command(
+        'melos run ${group != null ? '--group $group ' : ''}--list --json',
+      );
+      logger.newLine();
+      logger.log(json.encode(scripts));
+    } else {
+      logger.command(
+        'melos run ${group != null ? '--group $group ' : ''}--list',
+      );
+      logger.newLine();
+      scripts.forEach((_, script) => logger.log(script.name));
+    }
+  }
+
   /// Detects recursive script calls within the provided [script].
   ///
   /// This method recursively traverses the steps of the script to check
@@ -114,11 +161,11 @@ mixin _RunMixin on _Melos {
     traverseSteps(script);
   }
 
-  Future<String> _pickScript(MelosWorkspaceConfig config) async {
+  Future<String> _pickScript(Map<String, Script> scripts) async {
     // using toList as Maps may be unordered
-    final scripts = config.scripts.values.toList();
+    final scriptList = scripts.values.toList();
 
-    final scriptChoices = scripts.map((script) {
+    final scriptChoices = scriptList.map((script) {
       final styledName = AnsiStyles.cyan(script.name);
       final styledDescription =
           script.description.let((description) {
@@ -140,7 +187,7 @@ mixin _RunMixin on _Melos {
 
     final selectedScriptIndex = scriptChoices.indexOf(selectedScript);
 
-    return scripts[selectedScriptIndex].name;
+    return scriptList[selectedScriptIndex].name;
   }
 
   @override
@@ -276,7 +323,7 @@ mixin _RunMixin on _Melos {
 
   String _buildScriptCommand(String step, Scripts scripts) {
     if (scripts.containsKey(step)) {
-      return 'melos run $step';
+      return 'melos run $step --include-private';
     }
 
     if (_isStepACommand(step)) {
@@ -338,8 +385,8 @@ class ScriptNotFoundException implements MelosException {
   @override
   String toString() {
     final builder = StringBuffer(
-      'ScriptNotFoundException: The script $scriptName could not be found in '
-      "the 'pubspec.yaml' file.",
+      'ScriptNotFoundException: A script named $scriptName could not be found '
+      "in the 'pubspec.yaml' file.",
     );
 
     for (final scriptName in availableScriptNames) {
@@ -407,5 +454,16 @@ class RecursiveScriptCallException implements MelosException {
     return 'RecursiveScriptCallException: Detected a recursive call in script '
         'execution. The script "$scriptName" calls itself or forms a recursive '
         'loop.';
+  }
+}
+
+class EmptyGroupException implements MelosException {
+  EmptyGroupException._(this.group);
+
+  final String group;
+
+  @override
+  String toString() {
+    return 'EmptyGroupException: No scripts found in the group "$group".';
   }
 }
